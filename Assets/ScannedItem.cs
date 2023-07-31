@@ -14,13 +14,14 @@ public class ScannedItem : MonoBehaviour
         m_address.SetText($"{address}");
         Address = address;
         m_btn = GetComponent<Button>();
+        SetupButton();
     }
 
     private void SetupButton()
     {
         m_btn.onClick.AddListener(() =>
         {
-            BluetoothLEHardwareInterface.ConnectToPeripheral()
+            BluetoothManager.Instance.Connect(Address);
         });
     }
 }
