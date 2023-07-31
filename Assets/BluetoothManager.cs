@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 using System;
 
@@ -12,14 +13,18 @@ public class BluetoothManager : MonoBehaviour
     [SerializeField] private Transform m_scannedItemParent;
 
     [SerializeField] private TMP_Text m_btnText;
+    [SerializeField] private Image m_battery, m_cadence;
 
     private event Action Connecting;
     
     public const string SPEED_AND_CADENCE_SERVICE_UUID = "00001816-0000-1000-8000-00805f9b34fb";
-    public const string BATTERY_SERVICE_GUID = "0000180F-0000-1000-8000-00805F9B34FB";
-    public const string BATTERY_LEVEL_CHARACTERISTIC_GUID = "00002A19-0000-1000-8000-00805F9B34FB";
-    public const string CYCLING_SERVICE_GUID = "00001816-0000-1000-8000-00805f9b34fb";
-    public const string CSC_CHARACTERISTIC_GUID = "00002A5B-0000-1000-8000-00805F9B34FB";
+    //public const string BATTERY_SERVICE_GUID = "0000180F-0000-1000-8000-00805F9B34FB";
+    public const string BATTERY_SERVICE_GUID = "180F";
+    public const string BATTERY_LEVEL_CHARACTERISTIC_GUID = "2A19";
+    //public const string BATTERY_LEVEL_CHARACTERISTIC_GUID = "Battery Level";
+    //public const string CYCLING_SERVICE_GUID = "00001816-0000-1000-8000-00805f9b34fb";
+    public const string CYCLING_SERVICE_GUID = "1816";
+    public const string CSC_CHARACTERISTIC_GUID = "2A5B";
 
     public List<Service> ServicesToSubscribeTo { get; private set; } = new List<Service>();
     private Coroutine m_serviceRoutine;
@@ -90,38 +95,52 @@ public class BluetoothManager : MonoBehaviour
 
     public void Connect(string address)
     {
-        BluetoothLEHardwareInterface.ConnectToPeripheral(address, (name) =>
+        try
         {
-            m_btnText.SetText("Connecting");
+            BluetoothLEHardwareInterface.ConnectToPeripheral(address, (name) =>
+            {
+                m_btnText.SetText("Connecting");
 
-        }, null, (address, serviceUUID, characteristicUUID) =>
-        {
-            //Characteristic Action
-            //Get battery level characteristic
-            bool batteryService = serviceUUID.ToUpper() == BluetoothManager.BATTERY_SERVICE_GUID.ToUpper() &&
-                characteristicUUID.ToUpper() == BluetoothManager.BATTERY_LEVEL_CHARACTERISTIC_GUID.ToUpper();
-            bool cadenceService = serviceUUID.ToUpper() == BluetoothManager.CYCLING_SERVICE_GUID.ToUpper() &&
-                characteristicUUID.ToUpper() == BluetoothManager.CSC_CHARACTERISTIC_GUID.ToUpper();
-            if (batteryService)
+            }, null, (address, serviceUUID, characteristicUUID) =>
             {
-                m_btnText.SetText("Connected Battery");
-                SubscribeToPowerLevel(address);
-                ServicesToSubscribeTo.Add(new BatteryService(m_btnText, address));
-                if (m_serviceRoutine == null)
+                //Characteristic Action
+                //Get battery level characteristic
+                bool batteryService = serviceUUID.ToUpper().Contains(BluetoothManager.BATTERY_SERVICE_GUID.ToUpper()) &&
+                    characteristicUUID.ToUpper().Contains(BluetoothManager.BATTERY_LEVEL_CHARACTERISTIC_GUID.ToUpper());
+                bool cadenceService = serviceUUID.ToUpper().Contains(BluetoothManager.CYCLING_SERVICE_GUID.ToUpper()) &&
+                    characteristicUUID.ToUpper().Contains(BluetoothManager.CSC_CHARACTERISTIC_GUID.ToUpper());
+                Debug.Log($"Ours Characteristics: {BluetoothManager.BATTERY_LEVEL_CHARACTERISTIC_GUID.ToUpper()}");
+                Debug.Log($"Characteristics: {characteristicUUID}");
+                if (BluetoothManager.BATTERY_LEVEL_CHARACTERISTIC_GUID.ToUpper() == characteristicUUID)
+                    Debug.Log("MATCH");
+                    if (characteristicUUID.ToUpper().Contains("Battery Level".ToUpper()))    
                 {
-                    m_serviceRoutine = StartCoroutine(NextService());
+                    Debug.Log("Connected Battery");
+                    m_battery.color = Color.green;
+                    SubscribeToPowerLevel(address);
+                    ServicesToSubscribeTo.Add(new BatteryService(m_btnText, address));
+                    if (m_serviceRoutine == null)
+                    {
+                        m_serviceRoutine = StartCoroutine(NextService());
+                    }
+                    //BluetoothManager.OnConnectedItem(deviceName, address, serviceUUID);
                 }
-                //BluetoothManager.OnConnectedItem(deviceName, address, serviceUUID);
-            }
-            else if (cadenceService)
-            {
-                m_btnText.SetText("Connected Cadence");
-                SubscribeToCadence(address);
-                ServicesToSubscribeTo.Add(new CadenceService(m_btnText, address));
-                m_serviceRoutine = StartCoroutine(NextService());
-                //BluetoothManager.OnConnectedItem(deviceName, address, serviceUUID);
-            }
-        });
+                else if (BluetoothManager.CSC_CHARACTERISTIC_GUID.ToUpper() == characteristicUUID)
+                {
+                    m_btnText.SetText("Connected Cadence");
+                    m_cadence.color = Color.green;
+                    SubscribeToCadence(address);
+                    ServicesToSubscribeTo.Add(new CadenceService(m_btnText, address));
+                    m_serviceRoutine = StartCoroutine(NextService());
+                    //BluetoothManager.OnConnectedItem(deviceName, address, serviceUUID);
+                }
+            });
+        }
+        catch(Exception e)
+        {
+            m_btnText.SetText(e.Message);
+        }
+
     }
 
     private void SubscribeToPowerLevel(string deviceAddress)

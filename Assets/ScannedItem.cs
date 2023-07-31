@@ -21,6 +21,7 @@ public class ScannedItem : MonoBehaviour
     {
         m_btn.onClick.AddListener(() =>
         {
+            Debug.Log("Connect");
             BluetoothManager.Instance.Connect(Address);
         });
     }
