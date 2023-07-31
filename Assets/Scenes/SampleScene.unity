@@ -561,7 +561,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_scannedItemPrefab: {fileID: 8530158381898317744, guid: 62ff294f1e8af184dbc537bb656f7b6f,
     type: 3}
-  m_scannedItemParent: {fileID: 0}
+  m_scannedItemParent: {fileID: 177523095}
 --- !u!4 &1675325407
 Transform:
   m_ObjectHideFlags: 0
