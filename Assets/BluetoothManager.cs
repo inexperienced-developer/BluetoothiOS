@@ -1,12 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class BluetoothManager : MonoBehaviour
 {
     [SerializeField] private GameObject m_scannedItemPrefab;
     [SerializeField] private Transform m_scannedItemParent;
 
+    [SerializeField] private TMP_Text m_btnText;
+    
     public const string SPEED_AND_CADENCE_SERVICE_UUID = "00001816-0000-1000-8000-00805f9b34fb";
     public const string BATTERY_SERVICE_GUID = "0000180F-0000-1000-8000-00805F9B34FB";
     public const string BATTERY_LEVEL_CHARACTERISTIC_GUID = "00002A19-0000-1000-8000-00805F9B34FB";
@@ -15,11 +18,26 @@ public class BluetoothManager : MonoBehaviour
 
     private Dictionary<string, ScannedItem> m_scannedItems = new Dictionary<string, ScannedItem>();
 
-    private void StartScan()
+    private void Start()
     {
-        BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(new string[] { SPEED_AND_CADENCE_SERVICE_UUID }, null, (address, name, rssi, bytes) => {
+        BluetoothLEHardwareInterface.Initialize(true, false, () =>
+        {
+            m_btnText.SetText("Scan");
+        }, (error) =>
+        {
+
+            m_btnText.SetText("Error during initialize: " + error);
+        });
+    }
+
+    public void StartScan()
+    {
+        string[] scanUUID = new string[] { SPEED_AND_CADENCE_SERVICE_UUID };
+        m_btnText.SetText("Scanning");
+        BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(scanUUID, null, (address, name, rssi, bytes) => {
             BluetoothLEHardwareInterface.Log("item scanned: " + address);
             Debug.Log("item new: " + address);
+            m_btnText.SetText($"Found");
             if (m_scannedItems.ContainsKey(address))
             {
                 var scannedItem = m_scannedItems[address];
